@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+			var rowsToDelete = []; // Store rows to be deleted
+            // The event listener for the file upload
+            document.getElementById('txtFileUpload').addEventListener('change', upload, false);
+
+            // Method that checks that the browser supports the HTML5 File API
+            function browserSupportFileUpload() {
+                return window.File && window.FileReader && window.FileList && window.Blob;
+            }
+
+            // Method that reads and processes the selected file
+            function upload(evt) {
+                if (!browserSupportFileUpload()) {
+                    alert('The File APIs are not fully supported in this browser!');
+                } else {
+                    var data = null;
+                    var file = evt.target.files[0];
+                    var reader = new FileReader();
+                    reader.readAsText(file);
+                    reader.onload = function (event) {
+                        var csvData = event.target.result;
+                        Papa.parse(csvData, {
+                            complete: function (results) {
+                                if (results.data && results.data.length > 0) {
+                                    createTable(results.data, file.name);
+                                } else {
+                                    alert('No data to import!');
+                                }
+                            }
+                        });
+                    };
+                    reader.onerror = function () {
+                        alert('Unable to read ' + file.name);
+                    };
+                }
+            }
+
+            function createTable(tableData, originalFileName) {
+				var tableContainer = document.getElementById('table-container');
+                tableContainer.innerHTML = '';
+                var table = document.createElement('table');
+                var tableBody = document.createElement('tbody');
+				var index = 0;
+
+                tableData.forEach(function (rowData) {
+                    var row = document.createElement('tr');
+						index += 1;
+                    rowData.forEach(function (cellData) {
+                        var cell = document.createElement('td');
+                        var input = document.createElement('textarea'); 
+                        input.value = cellData;
+                        input.style.width = '100%';
+						if(cellData.length < 100){ input.style.height = '100%'; cell.style.width =  '10%'; }else{
+                        input.style.height = cellData.length / 10 + 'px'; cell.style.width = '100%';}
+                        cell.appendChild(input);
+
+                        row.appendChild(cell);
+                    });
+
+                    var deleteButton = document.createElement('button');
+                    deleteButton.appendChild(document.createTextNode('Delete'));
+                    deleteButton.addEventListener('click', function () {
+                        deleteRow(row, index);
+                    });
+
+                    row.appendChild(deleteButton);
+
+                    tableBody.appendChild(row);
+                });
+
+                table.appendChild(tableBody);
+                // Add a "Save" button at the top and bottom of the table
+                var saveButtonstop = document.createElement('div');
+                var saveTopButton = document.createElement('button');
+                saveTopButton.appendChild(document.createTextNode('Save'));
+                saveTopButton.addEventListener('click', function () {
+                    saveRowData(originalFileName);
+                });
+				saveButtonstop.appendChild(saveTopButton);
+				tableContainer.appendChild(saveButtonstop);
+				
+                tableContainer.appendChild(table); 
+				var saveButtonsbottom = document.createElement('div');
+                var saveBottomButton = document.createElement('button');
+                saveBottomButton.appendChild(document.createTextNode('Save'));
+                saveBottomButton.addEventListener('click', function () {
+                    saveRowData(originalFileName);
+                }); 
+                saveButtonsbottom.appendChild(saveBottomButton);
+                tableContainer.appendChild(saveButtonsbottom);
+            }
+
+			function deleteRow(row, rowIndex) {
+                row.remove();
+                // Store the row index to be deleted
+                rowsToDelete.push(rowIndex);
+            }
+			
+            function saveRowData(originalFileName) {
+                var rows = document.querySelectorAll('table tbody tr');
+                var editedData = [];
+
+                rows.forEach(function (row, index) {
+					if (rowsToDelete.includes(index)) {
+                        // Skip rows marked for deletion
+                        return;
+                    }
+                    var cells = row.querySelectorAll('td');
+                    var rowData = [];
+
+                    cells.forEach(function (cell) {
+                        var textarea = cell.querySelector('textarea');
+                        rowData.push('"' + escapeCSVValue(textarea.value) + '"');
+                    });
+
+                    editedData.push(rowData.join(','));
+                });
+
+                var editedCSV = editedData.join('\n');
+
+                // Create a Blob with the edited CSV content
+                var blob = new Blob([editedCSV], { type: 'text/csv' });
+
+                // Create a download link for the updated CSV
+                var downloadLink = document.createElement('a');
+                downloadLink.href = window.URL.createObjectURL(blob);
+                downloadLink.download = originalFileName;
+
+                // Trigger a click event on the download link to save the file
+                var clickEvent = new MouseEvent('click', {
+                    view: window,
+                    bubbles: true,
+                    cancelable: true,
+                });
+                downloadLink.dispatchEvent(clickEvent);
+            }
+
+            // Function to escape CSV values
+            function escapeCSVValue(value) {
+                if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+                    return value.replace(/"/g, '""');
+                }
+                return value;
+            }
+        });
+    </script>
+    <style>
+        table, th, td {
+            border: 1px solid black;
+            padding: 5px;
+            table-layout: fixed;
+            //width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="dvImportSegments" class="fileupload">
+        <fieldset>
+            <legend>Upload your CSV File</legend>
+            <input type="file" name="File Upload" id="txtFileUpload" accept=".csv" />
+        </fieldset>		
+    </div>
+	<div id="table-container"></div>
+</body>
+</html>
