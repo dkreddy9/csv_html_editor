@@ -6,9 +6,7 @@ CSV HTML Editor is a web-based tool for editing and manipulating CSV files with 
 - [Overview](#overview)
 - [Features](#features)
 - [Getting Started](#getting-started)
-- [Usage](#usage)
-- [Contributing](#contributing)
-- [License](#license)
+- [Usage](#usage) 
 
 ## Overview
 CSV HTML Editor is a simple yet powerful web application designed to make editing large CSV files more convenient. With this tool, you can upload CSV files, make changes to the content, and save the updated file, all within your web browser. Whether you need to clean, format, or modify CSV data, this tool simplifies the process.
