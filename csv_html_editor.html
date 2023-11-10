@@ -85,10 +85,11 @@
 
                 tableData.forEach(function (rowData) {
                     var row = document.createElement('tr');
-						index += 1;
-						 var cell = document.createElement('td');						 
+						
+					var cell = document.createElement('td');						 
 							 cell.innerHTML = index;
 							 row.appendChild(cell);
+					
                     rowData.forEach(function (cellData) {
 							var cell = document.createElement('td'); 						 
 							var input = document.createElement('textarea');
@@ -96,7 +97,8 @@
 							input.innerHTML = cellData;	
 							input.name = 'Content';
 							cell.appendChild(input);
-							 						 
+							//Custom Formating
+							custom_formating_rules(index, input, cell);						 
 							row.appendChild(cell);
 						 
                     });
@@ -110,6 +112,7 @@
                     row.appendChild(deleteButton);
 
                     tableBody.appendChild(row);
+					index += 1;
                 });
 
                 table.appendChild(tableBody);
@@ -211,7 +214,9 @@
 				tableContainer.appendChild(Toolbarbottom);
             }
 			
-			 
+			function custom_formating_rules(row_index, ui_element,cell){
+					 
+			}
 
 			function deleteRow(row, rowIndex) {
                 row.remove();
@@ -237,8 +242,9 @@
 					var cells = row.querySelectorAll('td');
 
 					cells.forEach(function (cell, cellIndex) {
+						if(cellIndex > 0){
 						var textarea = cell.querySelector('textarea');
-						originalData[rowIndex][cellIndex] = textarea.value;
+						originalData[rowIndex][cellIndex - 1 ] = textarea.value;}
 					});
 				});
 				 
@@ -259,7 +265,9 @@
 
                     cells.forEach(function (cell) {
                         var textarea = cell.querySelector('textarea');
+						if(textarea != null){
                         rowData.push('"' + escapeCSVValue(textarea.value) + '"');
+						}
                     });
 
                     editedData.push(rowData.join(','));
