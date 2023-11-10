@@ -1,11 +1,37 @@
 <!DOCTYPE html>
 <html>
 <head>
+	<!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"> -->
+	<!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script> -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
     <script type="text/javascript">
+	// Function to set the theme based on user's preference
+        function setTheme(theme) {
+            document.body.className = theme;
+            localStorage.setItem('theme', theme);
+        }
+
+        // Function to load the theme preference from localStorage
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                setTheme(savedTheme);
+            }
+        }
+
+        // Load the theme on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            loadTheme();
+        });
+		
         $(document).ready(function () {
 			var rowsToDelete = []; // Store rows to be deleted
+			var searchStr = '';
+            var replaceStr = '';
+			var originalData = []; // Variable to store the original data
+			
             // The event listener for the file upload
             document.getElementById('txtFileUpload').addEventListener('change', upload, false);
 
@@ -47,20 +73,28 @@
                 var table = document.createElement('table');
                 var tableBody = document.createElement('tbody');
 				var index = 0;
+				
+				// Store the original data
+				originalData = tableData.map(function (row) {
+					return [...row];
+				});
 
                 tableData.forEach(function (rowData) {
                     var row = document.createElement('tr');
 						index += 1;
+						 var cell = document.createElement('td');						 
+							 cell.innerHTML = index;
+							 row.appendChild(cell);
                     rowData.forEach(function (cellData) {
-                        var cell = document.createElement('td');
-                        var input = document.createElement('textarea'); 
-                        input.value = cellData;
-                        input.style.width = '100%';
-						if(cellData.length < 100){ input.style.height = '100%'; cell.style.width =  '10%'; }else{
-                        input.style.height = cellData.length / 10 + 'px'; cell.style.width = '100%';}
-                        cell.appendChild(input);
-
-                        row.appendChild(cell);
+							var cell = document.createElement('td'); 						 
+							var input = document.createElement('textarea');
+							//input.value = cellData;	 
+							input.innerHTML = cellData;	
+							input.name = 'Content';
+							cell.appendChild(input);
+							 						 
+							row.appendChild(cell);
+						 
                     });
 
                     var deleteButton = document.createElement('button');
@@ -75,34 +109,139 @@
                 });
 
                 table.appendChild(tableBody);
-                // Add a "Save" button at the top and bottom of the table
-                var saveButtonstop = document.createElement('div');
+				
+				var toptoolbar = document.createElement('div');
+				// Add a "Save" button at the top and bottom of the table                
                 var saveTopButton = document.createElement('button');
                 saveTopButton.appendChild(document.createTextNode('Save'));
                 saveTopButton.addEventListener('click', function () {
-                    saveRowData(originalFileName);
+                    saveRowData();
                 });
-				saveButtonstop.appendChild(saveTopButton);
-				tableContainer.appendChild(saveButtonstop);
+				toptoolbar.appendChild(saveTopButton);
+				var RevertButton = document.createElement('button');
+                RevertButton.appendChild(document.createTextNode('Revert'));
+                RevertButton.id = 'revertButton';
+				// Create a "Revert" button
+				RevertButton.addEventListener('click', function () {
+					revertToOriginalData();
+				});
+                toptoolbar.appendChild(RevertButton);
+				
+				// Add search and replace fields and buttons
+                var searchInput = document.createElement('input');
+				searchInput.type = 'text';
+                searchInput.placeholder = 'Search';
+                toptoolbar.appendChild(searchInput);
+
+                var replaceInput = document.createElement('input');
+				replaceInput.type = 'text';
+                replaceInput.placeholder = 'Replace';
+                toptoolbar.appendChild(replaceInput);
+
+                var searchButton = document.createElement('button');
+                searchButton.appendChild(document.createTextNode('Search and Replace'));
+                searchButton.addEventListener('click', function () {
+                    searchStr = searchInput.value;
+                    replaceStr = replaceInput.value;
+					caseSensitive = caseSensitiveCheckbox.checked;
+                    performSearchAndReplace();
+                });
+                toptoolbar.appendChild(searchButton);
+				var caseSensitiveCheckbox = document.createElement('input');
+                caseSensitiveCheckbox.type = 'checkbox';
+                caseSensitiveCheckbox.checked = false; // Checked by default
+                caseSensitiveCheckbox.id = 'caseSensitiveCheckbox';
+                toptoolbar.appendChild(caseSensitiveCheckbox);				
+
+                var caseSensitiveLabel = document.createElement('label');
+                caseSensitiveLabel.htmlFor = 'caseSensitiveCheckbox';
+                caseSensitiveLabel.appendChild(document.createTextNode('Case Sensitive'));
+                toptoolbar.appendChild(caseSensitiveLabel);				
+				
+				// Theme toggle with a space before the button
+				var themeToggle = document.createElement('span');
+				themeToggle.appendChild(document.createTextNode(' ')); // Add a space
+				themeToggle.appendChild(document.createElement('button')).appendChild(document.createTextNode('Toggle Theme'));
+				themeToggle.addEventListener('click', function () {
+					if (document.body.className === 'dark-theme') {
+						setTheme('light-theme');
+					} else {
+						setTheme('dark-theme');
+					}
+				});
+				toptoolbar.appendChild(themeToggle);
+				
+				// Add a "Download" button at the top and bottom of the table                
+                var DownloadTop = document.createElement('button');
+                DownloadTop.appendChild(document.createTextNode('Download'));
+                DownloadTop.addEventListener('click', function () {
+                    DownloadFile(originalFileName);
+                });
+				toptoolbar.appendChild(DownloadTop);
+				
+                //Add tool bar
+				tableContainer.appendChild(toptoolbar);
+				
+				// Add a message element to display the replaced strings
+					var messageElement = document.createElement('div');
+					messageElement.id = 'message';
+				tableContainer.appendChild(messageElement);
 				
                 tableContainer.appendChild(table); 
-				var saveButtonsbottom = document.createElement('div');
+				var Toolbarbottom = document.createElement('div');
                 var saveBottomButton = document.createElement('button');
                 saveBottomButton.appendChild(document.createTextNode('Save'));
                 saveBottomButton.addEventListener('click', function () {
-                    saveRowData(originalFileName);
+                    saveRowData();
                 }); 
-                saveButtonsbottom.appendChild(saveBottomButton);
-                tableContainer.appendChild(saveButtonsbottom);
+                Toolbarbottom.appendChild(saveBottomButton); 
+                 
+				// Add a "Download" button at the top and bottom of the table                
+                var DownloadButton = document.createElement('button');
+                DownloadButton.appendChild(document.createTextNode('Download'));
+                DownloadButton.addEventListener('click', function () {
+                    DownloadFile(originalFileName);
+                });
+				Toolbarbottom.appendChild(DownloadButton);
+				
+				tableContainer.appendChild(Toolbarbottom);
             }
+			
+ 
 
 			function deleteRow(row, rowIndex) {
                 row.remove();
                 // Store the row index to be deleted
                 rowsToDelete.push(rowIndex);
+				show_message(`Row Deleted!`);
             }
 			
-            function saveRowData(originalFileName) {
+			//Message Display
+			function show_message(message) {
+				var messageElement = document.getElementById('message');
+				messageElement.style.display = 'block';
+				messageElement.innerText = message;
+				setTimeout(function () {
+					messageElement.style.display = 'none';
+				}, 10000); // 10000 milliseconds (10 seconds)
+			}
+			function saveRowData() {
+				// Store the original data
+				var rows = document.querySelectorAll('table tbody tr');
+
+				rows.forEach(function (row, rowIndex) {
+					var cells = row.querySelectorAll('td');
+
+					cells.forEach(function (cell, cellIndex) {
+						var textarea = cell.querySelector('textarea');
+						originalData[rowIndex][cellIndex] = textarea.value;
+					});
+				});
+				 
+				show_message('Data Saved!');
+			}
+			
+            function DownloadFile(originalFileName) {
                 var rows = document.querySelectorAll('table tbody tr');
                 var editedData = [];
 
@@ -148,15 +287,124 @@
                 }
                 return value;
             }
+			function performSearchAndReplace() {
+				var rows = document.querySelectorAll('table tbody tr');
+				var replacementCount = 0;
+
+				// Escape the search string to treat it as plain text
+				var escapedSearchStr = searchStr.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+
+				rows.forEach(function (row) {
+					var cells = row.querySelectorAll('td');
+
+					cells.forEach(function (cell) {
+						var textarea = cell.querySelector('textarea');
+						var searchFlags = caseSensitive ? 'g' : 'gi';
+						var originalValue = textarea.value;
+
+						// Create a regular expression for searching the escaped search string
+						var regex = new RegExp(escapedSearchStr, searchFlags);
+
+						// Count the number of matches before the replace
+						var matchCountBefore = (originalValue.match(regex) || []).length;
+
+						// Perform the replace
+						originalValue = originalValue.replace(regex, replaceStr);
+
+						// Count the number of matches after the replace
+						var matchCountAfter = (originalValue.match(regex) || []).length;
+
+						// Calculate the number of replacements
+						var replacements = matchCountBefore ;
+						replacementCount += replacements;
+
+						textarea.value = originalValue;
+					});
+				});
+				// Display the replaced strings
+				show_message(`Replaced ${replacementCount} string(s).`);
+				 
+            }
+			    
+
+			function revertToOriginalData() {
+				var rows = document.querySelectorAll('table tbody tr');
+
+				rows.forEach(function (row, rowIndex) {
+					var cells = row.querySelectorAll('td');
+
+					cells.forEach(function (cell, cellIndex) {
+						var textarea = cell.querySelector('textarea');
+						var originalValue = originalData[rowIndex][cellIndex];
+
+						textarea.value = originalValue;
+					});
+				});
+			}
         });
     </script>
-    <style>
+    	<style>
         table, th, td {
             border: 1px solid black;
             padding: 5px;
             table-layout: fixed;
             //width: 100%;
+        } 
+	 
+	/* Dark theme styles */
+        .dark-theme {
+            background-color: #333;
+            color: #fff;
         }
+
+        .dark-theme textarea {
+            background-color: #333;
+            color: #fff;
+            border: 1px solid #fff;
+        }
+
+        /* Light theme styles */
+        .light-theme {
+            background-color: #fff;
+            color: #000;
+        }
+
+        .light-theme textarea {
+            background-color: #fff;
+            color: #000;
+            border: 1px solid #000;
+        }
+		input[type="text"] {
+			padding: 5px;
+			border: 1px solid #ccc;
+			border-radius: 3px;
+			//width: 100%;
+			margin-bottom: 10px;
+		}
+
+		/* Add placeholders for the search and replace input fields */
+		input[type="text"]::placeholder {
+			color: #777;
+		}
+		button {
+            background-color: #4CAF50;
+            border: 1px solid #45A049;
+            border-radius: 3px;
+            color: white;
+            padding: 5px 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45A049;
+        }
+		mark {
+		  color: transparent;
+		  background-color: #d4e9ab; /* or whatever */
+		}
+				
+		 
     </style>
 </head>
 <body>
