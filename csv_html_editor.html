@@ -75,9 +75,13 @@
 				var index = 0;
 				
 				// Store the original data
-				originalData = tableData.map(function (row) {
-					return [...row];
-				});
+				  originalData = tableData.map(function (row) {
+				 	return [...row];
+				}); 
+				
+				//originalData = tableData.map(function (row, rowIndex) {
+				//	return { index: rowIndex, data: [...row]  };
+				//});
 
                 tableData.forEach(function (rowData) {
                     var row = document.createElement('tr');
@@ -207,7 +211,7 @@
 				tableContainer.appendChild(Toolbarbottom);
             }
 			
- 
+			 
 
 			function deleteRow(row, rowIndex) {
                 row.remove();
@@ -334,10 +338,17 @@
 					var cells = row.querySelectorAll('td');
 
 					cells.forEach(function (cell, cellIndex) {
-						var textarea = cell.querySelector('textarea');
-						var originalValue = originalData[rowIndex][cellIndex];
-
-						textarea.value = originalValue;
+						if(cellIndex==0){
+							cell.innerHTML = rowIndex;
+						}else{
+							var textarea = cell.querySelector('textarea');
+							var originalValue = originalData[rowIndex][cellIndex - 1];
+							if(textarea != null ){
+							textarea.value = originalValue; 
+							textarea.innerHTML = originalValue;
+							custom_formating_rules(rowIndex, textarea, cell);
+							}
+						}
 					});
 				});
 			}
