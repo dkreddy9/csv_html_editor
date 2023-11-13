@@ -5,11 +5,17 @@
 	<!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script> -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ext-language_tools.js"></script>
 
     <script type="text/javascript">
 	// Function to set the theme based on user's preference
         function setTheme(theme) {
             document.body.className = theme;
+			var toolbar = document.querySelector('.toolbar');
+			if(toolbar){
+			toolbar.style.backgroundColor = window.getComputedStyle(document.body).backgroundColor;}
+			//document.getElementById('toolbar').className = theme;
             localStorage.setItem('theme', theme);
         }
 
@@ -20,10 +26,24 @@
                 setTheme(savedTheme);
             }
         }
+		function initializeCodeMirror() {
+            var textareas = document.querySelectorAll('textarea');
+
+			textareas.forEach(function (textarea) {
+				var editor = ace.edit(textarea.id);
+				editor.getSession().setMode('ace/mode/html');
+				editor.setOptions({
+					maxLines: Infinity,
+					enableBasicAutocompletion: true,
+					enableSnippets: true,
+					enableLiveAutocompletion: true
+				});
+			});
+        }
 
         // Load the theme on page load
         document.addEventListener('DOMContentLoaded', function () {
-            loadTheme();
+            loadTheme();			
         });
 		
         $(document).ready(function () {
@@ -55,6 +75,7 @@
                             complete: function (results) {
                                 if (results.data && results.data.length > 0) {
                                     createTable(results.data, file.name);
+									//initializeCodeMirror();
                                 } else {
                                     alert('No data to import!');
                                 }
@@ -92,9 +113,10 @@
 					
                     rowData.forEach(function (cellData) {
 							var cell = document.createElement('td'); 						 
-							var input = document.createElement('textarea');
-							//input.value = cellData;	 
-							input.innerHTML = cellData;	
+							var input = document.createElement('textarea');		 
+							input.value = cellData;	 
+							input.id = 'Editor' + index;
+							//input.innerHTML = cellData;	
 							input.name = 'Content';
 							cell.appendChild(input);
 							//Custom Formating
@@ -118,6 +140,8 @@
                 table.appendChild(tableBody);
 				
 				var toptoolbar = document.createElement('div');
+				toptoolbar.className = 'toolbar';
+				toptoolbar.id = 'toolbar';
 				// Add a "Save" button at the top and bottom of the table                
                 var saveTopButton = document.createElement('button');
                 saveTopButton.appendChild(document.createTextNode('Save'));
@@ -212,10 +236,13 @@
 				Toolbarbottom.appendChild(DownloadButton);
 				
 				tableContainer.appendChild(Toolbarbottom);
+				loadTheme();
             }
 			
 			function custom_formating_rules(row_index, ui_element,cell){
 					 
+					 
+			
 			}
 
 			function deleteRow(row, rowIndex) {
@@ -311,6 +338,7 @@
 
 					cells.forEach(function (cell) {
 						var textarea = cell.querySelector('textarea');
+						if(textarea){
 						var searchFlags = caseSensitive ? 'g' : 'gi';
 						var originalValue = textarea.value;
 
@@ -331,6 +359,7 @@
 						replacementCount += replacements;
 
 						textarea.value = originalValue;
+						}
 					});
 				});
 				// Display the replaced strings
@@ -338,7 +367,17 @@
 				 
             }
 			    
+			//Make tool bar fixed.
+			document.addEventListener('scroll', function () {
+			  var scrollPosition = window.scrollY;
 
+			  if (scrollPosition > 10) {
+				document.querySelector('.toolbar').classList.add('fixed');
+				document.querySelector('.toolbar').style.backgroundColor = window.getComputedStyle(document.body).backgroundColor;
+			  } else {
+				document.querySelector('.toolbar').classList.remove('fixed');
+			  }
+			});			
 			function revertToOriginalData() {
 				var rows = document.querySelectorAll('table tbody tr');
 
@@ -423,7 +462,17 @@
 		  background-color: #d4e9ab; /* or whatever */
 		}
 				
-		 
+		.toolbar {
+		  position: relative;
+		  transition: top 0.3s ease; /* Add a smooth transition effect */
+		}
+
+		.fixed {
+		  position: fixed;
+		  top: 0px;
+		  width: 100%; 
+		  z-index: 1000; /* Adjust the z-index as needed */
+		}
     </style>
 </head>
 <body>
